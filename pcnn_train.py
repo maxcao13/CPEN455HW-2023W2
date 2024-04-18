@@ -224,7 +224,7 @@ if __name__ == '__main__':
         
         if epoch % args.sampling_interval == 0:
             print('......sampling......')
-            sampling_labels = torch.randint(0, 4, (args.sample_batch_size,))
+            sampling_labels = torch.tensor([0, 1, 2, 3]).to(device)
             sample_t = sample(model, args.sample_batch_size, args.obs, sample_op, sampling_labels)
             sample_t = rescaling_inv(sample_t)
             save_images(sample_t, args.sample_dir)
