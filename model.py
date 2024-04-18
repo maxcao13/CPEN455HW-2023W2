@@ -95,9 +95,15 @@ class PixelCNN(nn.Module):
         num_mix = 3 if self.input_channels == 1 else 10
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
+        self.label_embedding = nn.Embedding(4, 32)
 
-
-    def forward(self, x, sample=False):
+    def forward(self, x, labels, sample=False):
+        label_embed = self.label_embedding(labels)
+        label_embed = label_embed.unsqueeze(1).unsqueeze(-1)  # Shape: [B, 1, 32, 1]
+        label_embed = label_embed.repeat(1, x.shape[1], 1, x.shape[3])  # Shape: [B, 3, 32, 32]
+        
+        x = x + label_embed # early fuse!
+        
         # similar as done in the tf repo :
         if self.init_padding is not sample:
             xs = [int(y) for y in x.size()]
@@ -157,5 +163,3 @@ class random_classifier(nn.Module):
         torch.save(self.state_dict(), 'models/conditional_pixelcnn.pth')
     def forward(self, x, device):
         return torch.randint(0, self.NUM_CLASSES, (x.shape[0],)).to(device)
-    
-    
