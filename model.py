@@ -96,12 +96,21 @@ class PixelCNN(nn.Module):
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
         self.label_embedding = nn.Embedding(4, 32)
+        self.embedding_to_input_channels = nn.Conv2d(32, 3, kernel_size=1)
+
 
     def forward(self, x, labels, sample=False):
-        label_embed = self.label_embedding(labels)
-        label_embed = label_embed.unsqueeze(1).unsqueeze(-1)  # Shape: [B, 1, 32, 1]
-        label_embed = label_embed.repeat(1, x.shape[1], 1, x.shape[3])  # Shape: [B, 3, 32, 32]
+        label_embed = self.label_embedding(labels)  # Shape: [batch_size, embedding_dim]
         
+        # Reshape for spatial broadcasting
+        label_embed = label_embed.unsqueeze(-1).unsqueeze(-1)  # Now [batch_size, embedding_dim, 1, 1]
+        
+        # Expand to match spatial dimensions
+        label_embed = label_embed.expand(-1, -1, x.size(2), x.size(3))  # Shape: [batch_size, embedding_dim, H, W]
+        
+        # Transform to match the  channels
+        label_embed = self.embedding_to_input_channels(label_embed)  # Shape: [batch_size, 3, H, W]
+
         x = x + label_embed # early fuse!
         
         # similar as done in the tf repo :

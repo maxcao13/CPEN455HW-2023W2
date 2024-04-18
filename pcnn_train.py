@@ -224,7 +224,13 @@ if __name__ == '__main__':
         
         if epoch % args.sampling_interval == 0:
             print('......sampling......')
-            sampling_labels = torch.tensor([0, 1, 2, 3]).to(device)
+            segment_size = args.sample_batch_size // 4
+            sampling_labels = torch.cat([
+                torch.zeros(segment_size, dtype=torch.long),  # First 25% are 0
+                torch.ones(segment_size, dtype=torch.long),   # Second 25% are 1
+                torch.full((segment_size,), 2, dtype=torch.long),  # Third 25% are 2
+                torch.full((segment_size,), 3, dtype=torch.long)   # Fourth 25% are 3
+            ])
             sample_t = sample(model, args.sample_batch_size, args.obs, sample_op, sampling_labels)
             sample_t = rescaling_inv(sample_t)
             save_images(sample_t, args.sample_dir)
