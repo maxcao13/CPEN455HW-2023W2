@@ -40,6 +40,7 @@ def get_label(model, model_input, device):
         # Store the computed losses
         losses[:, label] = log_prob
 
+
     # Determine the label with the minimum loss for each image
     # The argmin here gives the index of the label with the smallest loss, which is the predicted label
     predictions = torch.argmin(losses, dim=1)

@@ -49,6 +49,29 @@ class PixelCNNLayer_down(nn.Module):
 
         return u, ul
 
+class AbsolutePositionalEncoding2D(nn.Module):
+    def __init__(self, d_model, height, width):
+        super(AbsolutePositionalEncoding2D, self).__init__()
+        # Create a grid of positions for height and width
+        self.pos_enc = nn.Parameter(torch.empty(d_model, height, width))
+        nn.init.normal_(self.pos_enc)  # Initialize the positional encodings
+        self.reduce_dim = nn.Conv2d(d_model, 3, kernel_size=1)
+
+
+    def forward(self, x):
+        """
+        x: Tensor, shape [Batch, Channels, Height, Width]
+        """
+        batch_size, _, height, width = x.shape
+
+        # Expand pos_enc to match the batch size and apply dimension reduction
+        pos_enc_expanded = self.pos_enc.unsqueeze(0).expand(batch_size, -1, -1, -1)
+        pos_enc_reduced = self.reduce_dim(pos_enc_expanded)  # Apply convolution to reduce dimensions
+
+        # Add the positional encoding to the input tensor
+        return x + pos_enc_reduced
+
+
 
 class PixelCNN(nn.Module):
     def __init__(self, nr_resnet=5, nr_filters=80, nr_logistic_mix=10,
@@ -97,9 +120,11 @@ class PixelCNN(nn.Module):
         self.init_padding = None
         self.label_embedding = nn.Embedding(4, 32)
         self.embedding_to_input_channels = nn.Conv2d(32, 3, kernel_size=1)
+        self.ape = AbsolutePositionalEncoding2D(32, 32, 32)
 
 
     def forward(self, x, labels, sample=False):
+        x = self.ape(x)
         label_embed = self.label_embedding(labels)  # Shape: [batch_size, embedding_dim]
         
         # Reshape for spatial broadcasting
@@ -111,7 +136,7 @@ class PixelCNN(nn.Module):
         # Transform to match the  channels
         label_embed = self.embedding_to_input_channels(label_embed)  # Shape: [batch_size, 3, H, W]
 
-        x = x + label_embed # early fuse!
+        x = x + label_embed
         
         # similar as done in the tf repo :
         if self.init_padding is not sample:

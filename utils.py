@@ -98,7 +98,8 @@ def discretized_mix_logistic_loss(x, l):
     log_probs        = cond * log_cdf_plus + (1. - cond) * inner_out
     log_probs        = torch.sum(log_probs, dim=3) + log_prob_from_logits(logit_probs)
 
-    return torch.sum(log_sum_exp(log_probs), dim=[1, 2])
+    return -torch.sum(log_sum_exp(log_probs))
+    # return torch.sum(log_sum_exp(log_probs), dim=[1, 2])
 
 def to_one_hot(tensor, n, fill_with=1.):
     # we perform one hot encore with respect to the last axis
