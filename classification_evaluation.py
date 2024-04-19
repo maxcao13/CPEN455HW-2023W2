@@ -40,10 +40,9 @@ def get_label(model, model_input, device):
         # Store the computed losses
         losses[:, label] = log_prob
 
-
     # Determine the label with the minimum loss for each image
     # The argmin here gives the index of the label with the smallest loss, which is the predicted label
-    predictions = torch.argmin(losses, dim=1)
+    predictions = torch.argmax(losses, dim=1)
 
     return predictions
 # End of your code
@@ -57,6 +56,8 @@ def classifier(model, data_loader, device):
         original_label = [my_bidict[item] for item in categories]
         original_label = torch.tensor(original_label, dtype=torch.int64).to(device)
         answer = get_label(model, model_input, device)
+        # print("orign", original_label)
+        # print("answer", answer)
         correct_num = torch.sum(answer == original_label)
         acc_tracker.update(correct_num.item(), model_input.shape[0])
     
