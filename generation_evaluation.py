@@ -17,7 +17,7 @@ import torch
 # Begin of your code
 sample_op = lambda x : sample_from_discretized_mix_logistic(x, 5)
 def my_sample(model, gen_data_dir, sample_batch_size = 25, obs = (3,32,32), sample_op = sample_op):
-    for label, id in my_bidict:
+    for label, id in my_bidict.items():
         labels = torch.full((sample_batch_size,), id, dtype=torch.int64, device=device)
         print(f"Label: {label}")
         #generate images for each label, each label has 25 images

@@ -19,11 +19,32 @@ NUM_CLASSES = len(my_bidict)
 # And get the predicted label, which is a tensor of shape (batch_size,)
 # Begin of your code
 def get_label(model, model_input, device):
-    labels = torch.tensor([0, 1, 2, 3], dtype=torch.int64).repeat(model_input.shape[0]//4).to(device)
-    logits = model(model_input, labels)
-    log_prob = discretized_mix_logistic_loss(model_input, logits)
-    prediction = torch.argmax(log_prob, dim=0)
-    return prediction
+    num_labels = 4
+    batch_size = model_input.shape[0]
+    
+    # Placeholder for storing loss for each label per image
+    losses = torch.zeros(batch_size, num_labels, device=device)
+
+    # Iterate through each possible label
+    for label in range(num_labels):
+        # Create a label tensor filled with the current label for all images in the batch
+        labels = torch.full((batch_size,), label, dtype=torch.long, device=device)
+
+        # Compute logits with the model
+        logits = model(model_input, labels)
+
+        # Calculate log_prob using the logistic loss function
+        log_prob = discretized_mix_logistic_loss(model_input, logits)
+
+        # Assuming log_prob returns a tensor of shape [batch_size], where each entry is the loss for each image
+        # Store the computed losses
+        losses[:, label] = log_prob
+
+    # Determine the label with the minimum loss for each image
+    # The argmin here gives the index of the label with the smallest loss, which is the predicted label
+    predictions = torch.argmin(losses, dim=1)
+
+    return predictions
 # End of your code
 
 def classifier(model, data_loader, device):
