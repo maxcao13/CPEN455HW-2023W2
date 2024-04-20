@@ -50,9 +50,9 @@ class PixelCNNLayer_down(nn.Module):
         return u, ul
 
 
-class GatedFusion(nn.Module):
+class NonLinearFusion(nn.Module):
     def __init__(self, embed_dim):
-        super(GatedFusion, self).__init__()
+        super(NonLinearFusion, self).__init__()
         self.gate = nn.Sequential(
             nn.Linear(embed_dim, embed_dim),
             nn.Sigmoid()
@@ -108,7 +108,7 @@ class PixelCNN(nn.Module):
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
         self.label_embedding = nn.Embedding(4, 32)
-        self.gated_fusion = GatedFusion(32)
+        self.gated_fusion = NonLinearFusion(32)
 
     def forward(self, x, labels, sample=False):
         label_embed = self.label_embedding(labels)
