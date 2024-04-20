@@ -49,50 +49,17 @@ class PixelCNNLayer_down(nn.Module):
 
         return u, ul
 
-class AbsolutePositionalEncoding2D(nn.Module):
-    def __init__(self, d_model, height, width):
-        super(AbsolutePositionalEncoding2D, self).__init__()
-        # Create a grid of positions for height and width
-        self.pos_enc = nn.Parameter(torch.empty(d_model, height, width))
-        nn.init.normal_(self.pos_enc)  # Initialize the positional encodings
-        self.reduce_dim = nn.Conv2d(d_model, 3, kernel_size=1)
-
-
-    def forward(self, x):
-        """
-        x: Tensor, shape [Batch, Channels, Height, Width]
-        """
-        batch_size, _, height, width = x.shape
-
-        # Expand pos_enc to match the batch size and apply dimension reduction
-        pos_enc_expanded = self.pos_enc.unsqueeze(0).expand(batch_size, -1, -1, -1)
-        pos_enc_reduced = self.reduce_dim(pos_enc_expanded)  # Apply convolution to reduce dimensions
-
-        # Add the positional encoding to the input tensor
-        return x + pos_enc_reduced
-
-class NonLinearFusion(nn.Module):
-    def __init__(self, input_channels, embed_dim):
-        super(NonLinearFusion, self).__init__()
-        self.transform = nn.Linear(embed_dim, input_channels)
-        self.activation = nn.ReLU()
-
-    def forward(self, x, label_embed):
-        label_transformed = self.transform(label_embed)  # Transform labels to match input channels
-        label_transformed = label_transformed.unsqueeze(-1).unsqueeze(-1).expand_as(x)
-        combined = x + label_transformed  # Add transformed labels to input
-        return self.activation(combined)  # Apply non-linear activation
 
 class GatedFusion(nn.Module):
-    def __init__(self, input_channels, embed_dim):
+    def __init__(self, embed_dim):
         super(GatedFusion, self).__init__()
         self.gate = nn.Sequential(
-            nn.Linear(embed_dim, input_channels),
+            nn.Linear(embed_dim, embed_dim),
             nn.Sigmoid()
         )
 
     def forward(self, x, label_embed):
-        gate_values = self.gate(label_embed).unsqueeze(-1).unsqueeze(-1).expand_as(x)
+        gate_values = self.gate(label_embed)
         return x * gate_values  # Apply gating
 
 class PixelCNN(nn.Module):
@@ -141,18 +108,19 @@ class PixelCNN(nn.Module):
         self.nin_out = nin(nr_filters, num_mix * nr_logistic_mix)
         self.init_padding = None
         self.label_embedding = nn.Embedding(4, 32)
-        self.non_linear_fusion = NonLinearFusion(input_channels, 32)
-        self.gated_fusion = GatedFusion(input_channels, 32)
-        self.embedding_to_input_channels = nn.Conv2d(32, 3, kernel_size=1)
-        self.ape = AbsolutePositionalEncoding2D(32, 32, 32)
-
+        self.gated_fusion = GatedFusion(32)
 
     def forward(self, x, labels, sample=False):
-        x = self.ape(x)
-        label_embed = self.label_embedding(labels)  # Shape: [batch_size, embedding_dim]
+        label_embed = self.label_embedding(labels)
 
-        x = self.non_linear_fusion(x, label_embed)
+        # transform [B, embed] -> [B, C, 32, 32]
+
+        label_embed = label_embed.unsqueeze(1).unsqueeze(3)
+
+        label_embed = label_embed.expand(-1, self.input_channels, -1, x.size(3))
+
         x = self.gated_fusion(x, label_embed)
+        x = x + label_embed
 
         # similar as done in the tf repo :
         if self.init_padding is not sample:

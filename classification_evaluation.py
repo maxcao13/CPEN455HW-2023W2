@@ -19,14 +19,13 @@ NUM_CLASSES = len(my_bidict)
 # And get the predicted label, which is a tensor of shape (batch_size,)
 # Begin of your code
 def get_label(model, model_input, device):
-    num_labels = 4
     batch_size = model_input.shape[0]
     
     # Placeholder for storing loss for each label per image
-    losses = torch.zeros(batch_size, num_labels, device=device)
+    losses = torch.zeros(batch_size, NUM_CLASSES, device=device)
 
     # Iterate through each possible label
-    for label in range(num_labels):
+    for label in range(NUM_CLASSES):
         # Create a label tensor filled with the current label for all images in the batch
         labels = torch.full((batch_size,), label, dtype=torch.long, device=device)
 
@@ -34,7 +33,7 @@ def get_label(model, model_input, device):
         logits = model(model_input, labels)
 
         # Calculate log_prob using the logistic loss function
-        log_prob = discretized_mix_logistic_loss(model_input, logits)
+        log_prob = discretized_mix_logistic_loss(model_input, logits, sum_all=False)
 
         # Assuming log_prob returns a tensor of shape [batch_size], where each entry is the loss for each image
         # Store the computed losses
@@ -56,8 +55,8 @@ def classifier(model, data_loader, device):
         original_label = [my_bidict[item] for item in categories]
         original_label = torch.tensor(original_label, dtype=torch.int64).to(device)
         answer = get_label(model, model_input, device)
-        # print("orign", original_label)
-        # print("answer", answer)
+        print("\norign", original_label)
+        print("answer", answer)
         correct_num = torch.sum(answer == original_label)
         acc_tracker.update(correct_num.item(), model_input.shape[0])
     

@@ -32,8 +32,8 @@ def log_prob_from_logits(x):
     m, _ = torch.max(x, dim=axis, keepdim=True)
     return x - m - torch.log(torch.sum(torch.exp(x - m), dim=axis, keepdim=True))
 
-
-def discretized_mix_logistic_loss(x, l):
+# modified with some help from ChatGPT and OpenAI PixelCNN
+def discretized_mix_logistic_loss(x, l, sum_all=True):
     """ log-likelihood for mixture of discretized logistics, assumes the data has been rescaled to [-1,1] interval """
     # Pytorch ordering
     x = x.permute(0, 2, 3, 1)
@@ -98,8 +98,10 @@ def discretized_mix_logistic_loss(x, l):
     log_probs        = cond * log_cdf_plus + (1. - cond) * inner_out
     log_probs        = torch.sum(log_probs, dim=3) + log_prob_from_logits(logit_probs)
 
-    # return -torch.sum(log_sum_exp(log_probs))
-    return -torch.sum(log_sum_exp(log_probs), dim=[1, 2])
+    if sum_all:
+      return -torch.sum(log_sum_exp(log_probs))
+    else:
+      return -torch.sum(log_sum_exp(log_probs), dim=[1, 2])
 
 def to_one_hot(tensor, n, fill_with=1.):
     # we perform one hot encore with respect to the last axis
