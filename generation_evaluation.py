@@ -15,7 +15,8 @@ import torch
 # You should modify this sample function to get the generated images from your model
 # This function should save the generated images to the gen_data_dir, which is fixed as 'samples'
 # Begin of your code
-sample_op = lambda x : sample_from_discretized_mix_logistic(x, 5)
+MY_LOGISTIC_MIX=10
+sample_op = lambda x : sample_from_discretized_mix_logistic(x, MY_LOGISTIC_MIX)
 def my_sample(model, gen_data_dir, sample_batch_size = 25, obs = (3,32,32), sample_op = sample_op):
     for label, id in my_bidict.items():
         labels = torch.full((sample_batch_size,), id, dtype=torch.int64, device=device)
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     #Begin of your code
     #Load your model and generate images in the gen_data_dir
     
-    model = PixelCNN(nr_resnet=1, nr_filters=40, input_channels=3, nr_logistic_mix=5)
+    model = PixelCNN(nr_resnet=1, nr_filters=80, input_channels=3, nr_logistic_mix=MY_LOGISTIC_MIX)
     model = model.to(device)
     model.load_state_dict(torch.load('models/conditional_pixelcnn.pth'))
     model = model.eval()

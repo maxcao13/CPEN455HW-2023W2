@@ -49,7 +49,7 @@ class PixelCNNLayer_down(nn.Module):
 
         return u, ul
 
-
+# Helped from ChatGPT
 class NonLinearFusion(nn.Module):
     def __init__(self, embed_dim):
         super(NonLinearFusion, self).__init__()
@@ -62,6 +62,7 @@ class NonLinearFusion(nn.Module):
         gate_values = self.gate(label_embed)
         return x * gate_values  # Apply gating
 
+# Helped from ChatGPT
 class PixelCNN(nn.Module):
     def __init__(self, nr_resnet=5, nr_filters=80, nr_logistic_mix=10,
                     resnet_nonlinearity='concat_elu', input_channels=3):
