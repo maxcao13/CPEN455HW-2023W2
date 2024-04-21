@@ -22,25 +22,15 @@ NUM_CLASSES = len(my_bidict)
 def get_label(model, model_input, device):
     batch_size = model_input.shape[0]
     
-    # Placeholder for storing loss for each label per image
     losses = torch.zeros(batch_size, NUM_CLASSES, device=device)
 
     # Iterate through each possible label
     for label in range(NUM_CLASSES):
-        # Create a label tensor filled with the current label for all images in the batch
         labels = torch.full((batch_size,), label, dtype=torch.long, device=device)
-
-        # Compute logits with the model
         logits = model(model_input, labels)
-
-        # Calculate log_prob using the logistic loss function
         log_prob = discretized_mix_logistic_loss(model_input, logits, sum_all=False)
-
-        # Assuming log_prob returns a tensor of shape [batch_size], where each entry is the loss for each image
-        # Store the computed losses
         losses[:, label] = log_prob
 
-    # Determine the label with the minimum loss for each image
     # The argmin here gives the index of the label with the smallest loss, which is the predicted label
     predictions = torch.argmin(losses, dim=1)
 
@@ -89,6 +79,7 @@ if __name__ == '__main__':
     #You should replace the random classifier with your trained model
     #Begin of your code
     model = PixelCNN(nr_resnet=1, nr_filters=80, input_channels=3, nr_logistic_mix=10)
+    ### NOTE: you should load with map_location=device if you are using CPU (i can't change the code down there)
     #End of your code
     
     model = model.to(device)
